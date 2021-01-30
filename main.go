@@ -6,15 +6,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/fatih/color"
+	"github.com/nwidger/jsoncolor"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"sort"
-	"strings"
-
-	"github.com/fatih/color"
-	"github.com/mattn/go-colorable"
-	"github.com/nwidger/jsoncolor"
-	"github.com/pkg/errors"
 )
 
 // Exit codes
@@ -86,95 +83,31 @@ func init() {
 }
 
 func main() {
-	var (
-		ungronFlag     bool
-		colorizeFlag   bool
-		monochromeFlag bool
-		streamFlag     bool
-		noSortFlag     bool
-		versionFlag    bool
-		insecureFlag   bool
-		jsonFlag       bool
-	)
-
-	flag.BoolVar(&ungronFlag, "ungron", false, "")
-	flag.BoolVar(&ungronFlag, "u", false, "")
-	flag.BoolVar(&colorizeFlag, "colorize", false, "")
-	flag.BoolVar(&colorizeFlag, "c", false, "")
-	flag.BoolVar(&monochromeFlag, "monochrome", false, "")
-	flag.BoolVar(&monochromeFlag, "m", false, "")
-	flag.BoolVar(&streamFlag, "s", false, "")
-	flag.BoolVar(&streamFlag, "stream", false, "")
-	flag.BoolVar(&noSortFlag, "no-sort", false, "")
-	flag.BoolVar(&versionFlag, "version", false, "")
-	flag.BoolVar(&insecureFlag, "k", false, "")
-	flag.BoolVar(&insecureFlag, "insecure", false, "")
-	flag.BoolVar(&jsonFlag, "j", false, "")
-	flag.BoolVar(&jsonFlag, "json", false, "")
-
-	flag.Parse()
-
-	// Print version information
-	if versionFlag {
-		fmt.Printf("gron version %s\n", gronVersion)
-		os.Exit(exitOK)
-	}
-
-	// If executed as 'ungron' set the --ungron flag
-	if strings.HasSuffix(os.Args[0], "ungron") {
-		ungronFlag = true
-	}
-
 	// Determine what the program's input should be:
 	// file, HTTP URL or stdin
 	var rawInput io.Reader
-	filename := flag.Arg(0)
-	if filename == "" || filename == "-" {
-		rawInput = os.Stdin
-	} else if validURL(filename) {
-		r, err := getURL(filename, insecureFlag)
-		if err != nil {
-			fatal(exitFetchURL, err)
-		}
-		rawInput = r
-	} else {
-		r, err := os.Open(filename)
-		if err != nil {
-			fatal(exitOpenFile, err)
-		}
-		rawInput = r
+	filename := os.Args[1]
+
+	r, err := os.Open(filename)
+	if err != nil {
+		fatal(exitOpenFile, err)
+	}
+	rawInput = r
+
+	m, err := Gron(rawInput)
+	if err != nil {
+		panic(err)
 	}
 
-	var opts int
-	// The monochrome option should be forced if the output isn't a terminal
-	// to avoid doing unnecessary work calling the color functions
-	switch {
-	case colorizeFlag:
-		color.NoColor = false
-	case monochromeFlag || color.NoColor:
-		opts = opts | optMonochrome
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
 	}
-	if noSortFlag {
-		opts = opts | optNoSort
-	}
-	if jsonFlag {
-		opts = opts | optJSON
-	}
+	sort.Strings(keys)
 
-	// Pick the appropriate action: gron, ungron or gronStream
-	var a actionFn = gron
-	if ungronFlag {
-		a = ungron
-	} else if streamFlag {
-		a = gronStream
+	for _, k := range keys {
+		fmt.Printf("%s => %s\n", k, m[k])
 	}
-	exitCode, err := a(rawInput, colorable.NewColorableStdout(), opts)
-
-	if exitCode != exitOK {
-		fatal(exitCode, err)
-	}
-
-	os.Exit(exitOK)
 }
 
 // an actionFn represents a main action of the program, it accepts

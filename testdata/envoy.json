@@ -1,0 +1,62 @@
+{
+  "name": "cluster.localtest-new.default.aws-us-east-1.local",
+  "alt_stat_name": "localtest-new.default",
+  "ClusterDiscoveryType": {
+    "Type": 0
+  },
+  "connect_timeout": {
+    "nanos": 50000000
+  },
+  "load_assignment": {
+    "cluster_name": "cluster.localtest-new.default.aws-us-east-1.local",
+    "endpoints": [
+      {
+        "lb_endpoints": [
+          {
+            "HostIdentifier": {
+              "Endpoint": {
+                "address": {
+                  "Address": {
+                    "SocketAddress": {
+                      "address": "127.0.0.1",
+                      "PortSpecifier": {
+                        "PortValue": 8080
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "circuit_breakers": {
+    "thresholds": [
+      {
+        "max_connections": {
+          "value": 102400
+        },
+        "max_requests": {
+          "value": 102400
+        }
+      }
+    ]
+  },
+  "http2_protocol_options": {},
+  "LbConfig": null,
+  "upstream_connection_options": {
+    "tcp_keepalive": {
+      "keepalive_probes": {
+        "value": 3
+      },
+      "keepalive_time": {
+        "value": 300
+      },
+      "keepalive_interval": {
+        "value": 30
+      }
+    }
+  }
+}
